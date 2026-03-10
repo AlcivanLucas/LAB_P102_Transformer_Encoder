@@ -2,6 +2,8 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1ckGcLo-yYV0cG1hFAJsQpCdifgHvr8dw?usp=sharing)
 
+ou https://colab.research.google.com/drive/1ckGcLo-yYV0cG1hFAJsQpCdifgHvr8dw?usp=sharing
+
 Este projeto implementa um Transformer Encoder do zero usando apenas NumPy e Pandas. O objetivo é demonstrar o funcionamento interno do mecanismo de atenção e das camadas do Transformer, sem depender de bibliotecas de deep learning como TensorFlow ou PyTorch.
 
 ## Estrutura do Projeto
@@ -55,6 +57,25 @@ Esta é uma implementação educacional simplificada:
 - LayerNorm é simulada
 - Não há treinamento real
 - Apenas para demonstração conceitual
+
+## Créditos
+
+•
+Implementação e Lógica: Este projeto foi desenvolvido para a disciplina de Tópicos em Inteligência Artificial.
+
+•
+Documentação e README: Este documento README.md foi gerado com o auxílio do Gemini (Google), que também auxiliou na organização de outros detalhes menos críticos do projeto para garantir clareza e profissionalismo.
+
+## Nota sobre Integridade Acadêmica
+
+O uso de IA Generativa (Gemini) foi restrito ao suporte na estruturação do código, esclarecimento de sintaxe de bibliotecas matemáticas (numpy) e geração de documentação. A lógica matemática central e a arquitetura do Transformer foram implementadas seguindo rigorosamente as especificações do enunciado do laboratório.
+
+## Versão
+
+v1.0
+
+
+
 
 ## Referências
 
