@@ -26,108 +26,138 @@ def preparar_dados():
     # 3. Inicializar uma 'Tabela de Embeddings' simulada
     vocab_size = len(vocabulario)
     d_model = 64 # Conforme sugestão para processamento em CPU
-    embedding_table = np.random.randn(vocab_size, d_model)
+    
+    # Usamos uma inicialização menor (Xavier/He) para evitar valores muito altos que causam instabilidade
+    embedding_table = np.random.randn(vocab_size, d_model) * 0.1
     
     # Converter IDs para embeddings
     embeddings_entrada = np.array([embedding_table[i] for i in ids_entrada])
     
     # 4. O tensor de entrada final (X) deve ter o formato (Batch_size, Sequence_Length, d_model)
-    # Adicionando a dimensão de Batch (Batch_size = 1)
     X = np.expand_dims(embeddings_entrada, axis=0)
     
     print(f"\nFormato do tensor de entrada (X): {X.shape} (Batch, Seq_Len, d_model)")
     return X, d_model
 
-# Passo 2: Implementação da Multi-Head Attention
+# Passo 2: O Motor Matemático
 
-class MultiHeadAttention:
-    def __init__(self, d_model, num_heads):
-        self.d_model = d_model
-        self.num_heads = num_heads
-        self.d_k = d_model // num_heads
-        
-        # Inicializar pesos para Q, K, V
-        self.W_q = np.random.randn(d_model, d_model)
-        self.W_k = np.random.randn(d_model, d_model)
-        self.W_v = np.random.randn(d_model, d_model)
-        self.W_o = np.random.randn(d_model, d_model)
+def softmax_estavel(x):
+    """
+    Implementação da função Softmax numericamente estável.
+    Subtraímos o valor máximo de cada linha antes de calcular o exponencial
+    para evitar o erro de overflow (np.exp de números muito grandes).
+    """
+    # x shape: (Batch, Seq, Seq)
+    # Subtrair o máximo ao longo do último eixo
+    max_x = np.max(x, axis=-1, keepdims=True)
+    e_x = np.exp(x - max_x)
+    return e_x / np.sum(e_x, axis=-1, keepdims=True)
+
+def scaled_dot_product_attention(X, d_model):
+    """Implementação do Scaled Dot-Product Attention."""
+    d_k = d_model
     
-    def split_heads(self, x):
-        # x: (batch, seq_len, d_model)
-        batch, seq_len, _ = x.shape
-        x = x.reshape(batch, seq_len, self.num_heads, self.d_k)
-        return x.transpose(0, 2, 1, 3)  # (batch, num_heads, seq_len, d_k)
+    # 1. Inicializar matrizes de pesos aleatórias (escala reduzida para estabilidade)
+    Wq = np.random.randn(d_model, d_k) * 0.1
+    Wk = np.random.randn(d_model, d_k) * 0.1
+    Wv = np.random.randn(d_model, d_model) * 0.1
     
-    def scaled_dot_product_attention(self, Q, K, V):
-        # Q, K, V: (batch, num_heads, seq_len, d_k)
-        scores = np.matmul(Q, K.transpose(0, 1, 3, 2)) / np.sqrt(self.d_k)
-        attention_weights = np.exp(scores) / np.sum(np.exp(scores), axis=-1, keepdims=True)
-        output = np.matmul(attention_weights, V)
-        return output, attention_weights
+    # 2. Gerar Q, K e V a partir de X
+    Q = np.matmul(X, Wq) 
+    K = np.matmul(X, Wk) 
+    V = np.matmul(X, Wv) 
     
-    def forward(self, x):
-        # x: (batch, seq_len, d_model)
-        Q = np.matmul(x, self.W_q)
-        K = np.matmul(x, self.W_k)
-        V = np.matmul(x, self.W_v)
-        
-        Q = self.split_heads(Q)
-        K = self.split_heads(K)
-        V = self.split_heads(V)
-        
-        attn_output, attn_weights = self.scaled_dot_product_attention(Q, K, V)
-        
-        # Concatenar heads
-        attn_output = attn_output.transpose(0, 2, 1, 3).reshape(x.shape[0], x.shape[1], self.d_model)
-        
-        # Aplicar W_o
-        output = np.matmul(attn_output, self.W_o)
-        return output, attn_weights
-
-# Passo 3: Implementação da Feed-Forward Network
-
-class FeedForward:
-    def __init__(self, d_model, d_ff):
-        self.W1 = np.random.randn(d_model, d_ff)
-        self.W2 = np.random.randn(d_ff, d_model)
-        self.b1 = np.zeros(d_ff)
-        self.b2 = np.zeros(d_model)
+    # 3. Calcular produto escalar entre Q e a transposta de K
+    K_T = K.transpose(0, 2, 1)
+    scores = np.matmul(Q, K_T) 
     
-    def forward(self, x):
-        # x: (batch, seq_len, d_model)
-        hidden = np.matmul(x, self.W1) + self.b1
-        hidden = np.maximum(hidden, 0)  # ReLU
-        output = np.matmul(hidden, self.W2) + self.b2
-        return output
-
-# Passo 4: Implementação da Encoder Layer
-
-class EncoderLayer:
-    def __init__(self, d_model, num_heads, d_ff):
-        self.mha = MultiHeadAttention(d_model, num_heads)
-        self.ffn = FeedForward(d_model, d_ff)
-        self.norm1 = np.ones(d_model)  # Simulação de LayerNorm
-        self.norm2 = np.ones(d_model)
+    # 4. Fazer o scaling (divisão) por sqrt(d_k) - ESSENCIAL PARA ESTABILIDADE
+    scaled_scores = scores / np.sqrt(d_k)
     
-    def forward(self, x):
-        # Multi-Head Attention com residual connection
-        attn_output, _ = self.mha.forward(x)
-        x = x + attn_output  # Residual
-        x = x * self.norm1  # Simulação de norm
+    # 5. Aplicar Softmax Estável
+    attention_weights = softmax_estavel(scaled_scores)
+    
+    # 6. Multiplicar o resultado pelas matrizes de valor V
+    output = np.matmul(attention_weights, V) 
+    
+    return output
+
+def layer_norm(X, epsilon=1e-6):
+    """Implementação da Layer Normalization."""
+    # Normalização de camada opera na dimensão das features (último eixo)
+    mean = np.mean(X, axis=-1, keepdims=True)
+    var = np.var(X, axis=-1, keepdims=True)
+    
+    # Normalizar: (X - mean) / sqrt(var + epsilon)
+    return (X - mean) / np.sqrt(var + epsilon)
+
+def feed_forward_network(X, d_model, d_ff=256):
+    """Implementação da Feed-Forward Network (FFN)."""
+    # 1. Primeira transformação linear (expansão)
+    W1 = np.random.randn(d_model, d_ff) * 0.1
+    b1 = np.zeros((1, d_ff))
+    
+    # 2. Função de ativação ReLU (max(0, x))
+    h1 = np.maximum(0, np.matmul(X, W1) + b1)
+    
+    # 3. Segunda transformação linear (contração)
+    W2 = np.random.randn(d_ff, d_model) * 0.1
+    b2 = np.zeros((1, d_model))
+    
+    output = np.matmul(h1, W2) + b2
+    return output
+
+# Passo 3: Empilhando tudo
+
+def encoder_block(X, d_model):
+    """Executa o fluxo de uma única camada do Encoder."""
+    # 1. X_att = SelfAttention(X)
+    X_att = scaled_dot_product_attention(X, d_model)
+    
+    # 2. X_norm1 = LayerNorm(X + X_att) (Conexão Residual + Normalização)
+    X_norm1 = layer_norm(X + X_att)
+    
+    # 3. X_ffn = FFN(X_norm1)
+    X_ffn = feed_forward_network(X_norm1, d_model)
+    
+    # 4. X_out = LayerNorm(X_norm1 + X_ffn) (Conexão Residual + Normalização)
+    X_out = layer_norm(X_norm1 + X_ffn)
+    
+    return X_out
+
+def transformer_encoder_scratch():
+    print("--- Iniciando Construção do Transformer Encoder From Scratch ---\n")
+    
+    # Preparação dos dados
+    X, d_model = preparar_dados()
+    
+    # Loop para N=6 camadas idênticas
+    N = 6
+    print(f"\nPassando por N={N} camadas do Encoder...")
+    
+    current_X = X
+    for i in range(N):
+        current_X = encoder_block(current_X, d_model)
+        print(f"Camada {i+1} concluída. Shape: {current_X.shape}")
+    
+    # Validação de Sanidade
+    print("\n--- Validação de Sanidade ---")
+    print(f"Shape Inicial: {X.shape}")
+    print(f"Shape Final (Vetor Z): {current_X.shape}")
+    
+    if X.shape == current_X.shape:
+        print("Sucesso! As dimensões foram preservadas.")
         
-        # Feed-Forward com residual
-        ffn_output = self.ffn.forward(x)
-        x = x + ffn_output
-        x = x * self.norm2
-        return x
-
-# Passo 5: Implementação do Transformer Encoder
-
-class TransformerEncoder:
-    def __init__(self, num_layers, d_model, num_heads, d_ff):
-        self.layers = [EncoderLayer(d_model, num_heads, d_ff) for _ in range(num_layers)]
+        # Verificar se há NaNs na saída
+        if np.isnan(current_X).any():
+            print("AVISO: Foram detectados valores NaN na saída.")
+        else:
+            print("Estabilidade Numérica: OK (Sem NaNs).")
+    else:
+        print("Erro: As dimensões mudaram durante o processamento.")
     
-    def forward(self, x):
-        for layer in self.layers:
-            x = layer.forward(x)
-        return x
+    print("\nRepresentação contínua densa (Z) - Primeiros 5 valores do primeiro token:")
+    print(current_X[0, 0, :5])
+
+if __name__ == "__main__":
+    transformer_encoder_scratch()
