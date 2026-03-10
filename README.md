@@ -50,6 +50,42 @@ O script imprime o vocabulário, a frase de entrada, os IDs correspondentes e o 
 - **Residual Connections**: Conexões residuais para melhorar o treinamento
 - **Layer Normalization**: Normalização das camadas (simulada)
 
+```bash
+--- Iniciando Construção do Transformer Encoder From Scratch ---
+
+Vocabulário Simulado:
+     Palavra  ID
+0         o   0
+1     banco   1
+2  bloqueou   2
+3    cartao   3
+4       meu   4
+5     ontem   5
+
+Frase de entrada: 'o banco bloqueou meu cartao ontem'
+IDs de entrada: [0, 1, 2, 4, 3, 5]
+
+Formato do tensor de entrada (X): (1, 6, 64) (Batch, Seq_Len, d_model)
+
+Passando por N=6 camadas do Encoder...
+Camada 1 concluída. Shape: (1, 6, 64)
+Camada 2 concluída. Shape: (1, 6, 64)
+Camada 3 concluída. Shape: (1, 6, 64)
+Camada 4 concluída. Shape: (1, 6, 64)
+Camada 5 concluída. Shape: (1, 6, 64)
+Camada 6 concluída. Shape: (1, 6, 64)
+
+--- Validação de Sanidade ---
+Shape Inicial: (1, 6, 64)
+Shape Final (Vetor Z): (1, 6, 64)
+Sucesso! As dimensões foram preservadas.
+Estabilidade Numérica: OK (Sem NaNs).
+
+Representação contínua densa (Z) - Primeiros 5 valores do primeiro token:
+[ 0.33893649  0.46089679 -0.00154602  0.382796   -0.88802493]
+```
+
+
 ## Limitações
 
 Esta é uma implementação educacional simplificada:
