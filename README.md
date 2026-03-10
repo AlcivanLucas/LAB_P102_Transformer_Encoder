@@ -104,6 +104,7 @@ Documentação e README: Este documento README.md foi gerado com o auxílio do G
 
 ## Nota sobre Integridade Acadêmica
 
+
 O uso de IA Generativa (Gemini) foi restrito ao suporte na estruturação do código, esclarecimento de sintaxe de bibliotecas matemáticas (numpy) e geração de documentação. A lógica matemática central e a arquitetura do Transformer foram implementadas seguindo rigorosamente as especificações do enunciado do laboratório.
 
 ## Versão
