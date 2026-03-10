@@ -120,3 +120,14 @@ class EncoderLayer:
         x = x + ffn_output
         x = x * self.norm2
         return x
+
+# Passo 5: Implementação do Transformer Encoder
+
+class TransformerEncoder:
+    def __init__(self, num_layers, d_model, num_heads, d_ff):
+        self.layers = [EncoderLayer(d_model, num_heads, d_ff) for _ in range(num_layers)]
+    
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer.forward(x)
+        return x
