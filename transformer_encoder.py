@@ -99,3 +99,24 @@ class FeedForward:
         hidden = np.maximum(hidden, 0)  # ReLU
         output = np.matmul(hidden, self.W2) + self.b2
         return output
+
+# Passo 4: Implementação da Encoder Layer
+
+class EncoderLayer:
+    def __init__(self, d_model, num_heads, d_ff):
+        self.mha = MultiHeadAttention(d_model, num_heads)
+        self.ffn = FeedForward(d_model, d_ff)
+        self.norm1 = np.ones(d_model)  # Simulação de LayerNorm
+        self.norm2 = np.ones(d_model)
+    
+    def forward(self, x):
+        # Multi-Head Attention com residual connection
+        attn_output, _ = self.mha.forward(x)
+        x = x + attn_output  # Residual
+        x = x * self.norm1  # Simulação de norm
+        
+        # Feed-Forward com residual
+        ffn_output = self.ffn.forward(x)
+        x = x + ffn_output
+        x = x * self.norm2
+        return x
